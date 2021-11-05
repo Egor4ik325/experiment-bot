@@ -1,0 +1,3 @@
+requests==2.26.0 # HTTP client
+flask==8.0.1 # Webhook listener
+
