@@ -1,0 +1,6 @@
+# local vscode setup
+.vscode
+
+__pycache__
+*.pyc
+*.rdb
