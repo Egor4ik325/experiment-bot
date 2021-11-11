@@ -1,3 +1,4 @@
 requests==2.26.0 # HTTP client
 flask==8.0.1 # Webhook listener
 celery==5.1.2 # Task queue
+pillow==8.3.2 # Image processing

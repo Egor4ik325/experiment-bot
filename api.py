@@ -56,6 +56,17 @@ def send_message(token: str, chat_id: int, text: str):
     return r.json()
 
 
+def send_photo(token: str, chat_id: int, i_bytes: bytes):
+    files = {"photo": i_bytes}
+    data = {"chat_id": chat_id}
+    r = requests.post(
+        API_URL.format(token=token, method="sendPhoto"), files=files, data=data
+    )
+    r.raise_for_status()
+
+    return r.json()
+
+
 def get_updates(token: str, last_update_id: int = None, timeout: int = None) -> dict:
     """
     Get updates for :token: bot, filter updates based on :last_update:

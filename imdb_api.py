@@ -9,9 +9,11 @@ API client library:
 - Handle specific HTTP results
 """
 from datetime import datetime
+from io import BytesIO
 from typing import List
 
 import requests
+from PIL import Image
 
 API_HOST = "movies-tvshows-data-imdb.p.rapidapi.com"
 API_BASE = f"https://{API_HOST}/"
@@ -53,11 +55,54 @@ class MovieDetailsResult(MovieSearchResult):
         super().__init__(title, year, imdb_id)
         self.description = description
         self.tagline = tagline
-        self.release_date = datetime.strptime(release_date, r"%Y-%m-%d").date()
+        if release_date == "0000-00-00":
+            self.release_date = None
+        else:
+            self.release_date = datetime.strptime(release_date, r"%Y-%m-%d").date()
         self.imdb_rating = float(imdb_rating)
         self.vote_count = float(vote_count)
         self.popularity = float(popularity)
         self.rated = rated
+
+
+class MovieImagesResult:
+    def __init__(self, title: str, IMDB: str, poster: str, fanart: str, **kwargs):
+        self.title = title
+        self.IMDB = IMDB
+        self.poster = None
+        self.fanart = None
+        if poster != "":
+            self.poster = poster
+        if fanart != "":
+            self.fanart = fanart
+        self._poster_image = None
+        self._fanart_image = None
+
+    def _get_cache_image(
+        self, image_url: str, cache_attribute_name: str
+    ) -> Image.Image:
+        if getattr(self, cache_attribute_name) is None:
+            r = requests.get(image_url)
+            r.raise_for_status()
+
+            content_bytes_stream = BytesIO(r.content)
+            setattr(self, cache_attribute_name, Image.open(content_bytes_stream))
+
+        return getattr(self, cache_attribute_name)
+
+    @property
+    def poster_image(self) -> Image.Image:
+        if self.poster is None:
+            return None
+
+        return self._get_cache_image(self.poster, "_poster_image")
+
+    @property
+    def fanart_image(self) -> Image.Image:
+        if self.fanart is None:
+            return None
+
+        return self._get_cache_image(self.fanart, "_fanart_image")
 
 
 class IMDBAPIClient:
@@ -122,6 +167,17 @@ class IMDBAPIClient:
         """
         Get movie images as URLs.
         """
+        r = self.s.get(
+            API_BASE, params={"type": "get-movies-images-by-imdb", "imdb": imdb_id}
+        )
+        r.raise_for_status()
+
+        data = r.json()
+
+        if data["status"] != "OK":
+            raise IMBDAPIError(data["status_message"])
+
+        return MovieImagesResult(**data)
 
 
 if __name__ == "__main__":
@@ -131,15 +187,20 @@ if __name__ == "__main__":
         settings_json = json.load(settings)
 
     c = IMDBAPIClient(settings_json["x-rapidapi-key"])
-    results = c.search_movies_by_title("God")
+    results = c.search_movies_by_title("Dune: Part Two")
 
-    # Print search results
-    # for r in results:
-    #     print(r)
+    detailed_results = [c.get_movie_details(result.imdb_id) for result in results]
 
+    detailed_results.sort(key=lambda r: r.release_date, reverse=True)
     movie = results[0]
+
     details = c.get_movie_details(movie.imdb_id)
 
     print("Movie:", details)
     print("Descpription:", details.description)
     print("Rating:", details.imdb_rating)
+
+    images = c.get_movie_images(movie.imdb_id)
+    print(images.title)
+    if images.poster_image is not None:
+        images.poster_image.show()
