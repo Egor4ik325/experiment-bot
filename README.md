@@ -10,8 +10,12 @@ Expermental bot for trying out all kinds of features
 
 - [ ] API client documentation practicies
 
-- [ ] Speech to text API
+- [x] Speech to text API
 
 - [ ] Translation API
 
-- [ ] IronPython
+- [ ] Data scraping
+
+- [x] IronPython
+
+- [ ] Chat bot

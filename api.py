@@ -7,6 +7,7 @@ import requests
 from flask import Flask, Response, request
 
 API_URL = "https://api.telegram.org/bot{token}/{method}"
+FILE_URL = "https://api.telegram.org/file/bot{token}/{file_path}"
 
 
 class Chat:
@@ -45,6 +46,19 @@ def get_me(token: str) -> dict:
     r = requests.get(API_URL.format(token=token, method="getMe"))
     r.raise_for_status()
     return r.json()
+
+
+def get_file(token: str, file_id: str) -> bytes:
+    r = requests.get(
+        API_URL.format(token=token, method="getFile"), params={"file_id": file_id}
+    )
+    r.raise_for_status()
+    r = r.json()
+    file_path = r["result"]["file_path"]
+
+    file_response = requests.get(FILE_URL.format(token=token, file_path=file_path))
+    file_response.raise_for_status()
+    return file_response.content
 
 
 def send_message(token: str, chat_id: int, text: str):
